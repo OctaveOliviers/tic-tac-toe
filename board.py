@@ -2,17 +2,21 @@
 # @Author: OctaveOliviers
 # @Date:   2020-09-17 13:04:41
 # @Last Modified by:   OctaveOliviers
-# @Last Modified time: 2020-09-17 16:51:33
+# @Last Modified time: 2020-10-02 15:19:51
 
 class Board:
     """docstring for Board"""
 
     def __init__(self):
-        self.set('---------')
+        self.reset()
         
 
     def set(self, setup):
         self.board = list(setup)
+
+
+    def reset(self):
+        self.set('---------')
 
 
     def print(self):
@@ -30,12 +34,16 @@ class Board:
         for i in index_o: self.board[i] = 'x'
 
 
-    def update(self, index):
-        self.board[index] = 'x'
+    def add_x(self, index):
+        if not index is None: self.board[index] = 'x'
+
+
+    def add_o(self, index):
+        if not index is None: self.board[index] = 'o'
 
 
     def get_state(self):
-        return self.board
+        return ''.join(self.board)
 
 
     def is_full(self):

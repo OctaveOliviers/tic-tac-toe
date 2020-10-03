@@ -2,7 +2,7 @@
 # @Author: OctaveOliviers
 # @Date:   2020-09-17 13:05:22
 # @Last Modified by:   OctaveOliviers
-# @Last Modified time: 2020-10-02 18:19:57
+# @Last Modified time: 2020-10-03 11:44:39
 
 import itertools
 import random
@@ -35,32 +35,29 @@ class Player(object):
         
 
     def choose_action(self, board):
-        # board (list) 9 elements with '-', 'x' or 'o'
+        # board         string of 9 elements '-', 'x' or 'o'
 
         # free positions
         free = [index for index, element in enumerate(list(board)) if element == '-']
 
+        # exploration
         if random.random() < self.epsilon and self.is_training:
-            # exploration
+            # choose random action
             index = random.choice(free)
             # reduce exploration rate
             self.epsilon = max(0.999*self.epsilon, 0.05)
             return index
 
+        # exploitation
         else:
-            # exploitation
             # next possible states
             next_states = []
-            
             for i in free:
                 next_board = copy.copy(list(board))
                 next_board[i] = 'x'
                 next_states.append(''.join(next_board))
-
-
             # get value for each possible next state
             next_values = [self.states.get(state) for state in next_states]
-
             # search which state maximizes the next values
             if self.is_training:
                 index = random.choices(free, weights=next_values)[0]
@@ -79,7 +76,8 @@ class Player(object):
 
 
     def update_values(self, board_old, board_new):
-
+        # board         string of 9 elements '-', 'x' or 'o'
+        
         val_old = self.states[board_old]
         val_new = self.states[board_new]
 
@@ -107,7 +105,7 @@ class Player(object):
 
         
     def has_won(self, board):
-        # board (list) 9 elements with '-', 'x' or 'o'
+        # board         string of 9 elements '-', 'x' or 'o'
         
         won = False
 
@@ -123,7 +121,7 @@ class Player(object):
 
 
     def has_lost(self, board):
-    # board (list) 9 elements with '-', 'x' or 'o'
+    # board         string of 9 elements '-', 'x' or 'o'
 
         lost = False
 

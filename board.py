@@ -2,7 +2,7 @@
 # @Author: OctaveOliviers
 # @Date:   2020-09-17 13:04:41
 # @Last Modified by:   OctaveOliviers
-# @Last Modified time: 2020-10-02 15:19:51
+# @Last Modified time: 2020-10-03 11:44:45
 
 class Board:
     """docstring for Board"""

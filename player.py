@@ -2,7 +2,7 @@
 # @Author: OctaveOliviers
 # @Date:   2020-09-17 13:05:22
 # @Last Modified by:   OctaveOliviers
-# @Last Modified time: 2020-10-03 11:44:39
+# @Last Modified time: 2020-10-04 14:21:54
 
 import itertools
 import random
@@ -15,8 +15,7 @@ class Player(object):
     assume always x-player
     """
 
-    def __init__(self, epsilon, alpha):
-        self.epsilon = epsilon      # exploration rate
+    def __init__(self, alpha):
         self.alpha = alpha          # learning rate
 
         self.training_mode()
@@ -35,36 +34,25 @@ class Player(object):
         
 
     def choose_action(self, board):
-        # board         string of 9 elements '-', 'x' or 'o'
+        # board = string of 9 elements '-', 'x' or 'o'
 
         # free positions
         free = [index for index, element in enumerate(list(board)) if element == '-']
-
-        # exploration
-        if random.random() < self.epsilon and self.is_training:
-            # choose random action
-            index = random.choice(free)
-            # reduce exploration rate
-            self.epsilon = max(0.999*self.epsilon, 0.05)
-            return index
-
-        # exploitation
+        # next possible states
+        next_states = []
+        for i in free:
+            next_board = copy.copy(list(board))
+            next_board[i] = 'x'
+            next_states.append(''.join(next_board))
+        # get value for each possible next state
+        next_values = [self.states.get(state) for state in next_states]
+        # search which state maximizes the next values
+        if self.is_training:
+            index = random.choices(free, weights=next_values)[0]
         else:
-            # next possible states
-            next_states = []
-            for i in free:
-                next_board = copy.copy(list(board))
-                next_board[i] = 'x'
-                next_states.append(''.join(next_board))
-            # get value for each possible next state
-            next_values = [self.states.get(state) for state in next_states]
-            # search which state maximizes the next values
-            if self.is_training:
-                index = random.choices(free, weights=next_values)[0]
-            else:
-                index = free[next_values.index(max(next_values))]
+            index = free[next_values.index(max(next_values))]
             
-            return index
+        return index
 
 
     def playing_mode(self):
@@ -76,7 +64,7 @@ class Player(object):
 
 
     def update_values(self, board_old, board_new):
-        # board         string of 9 elements '-', 'x' or 'o'
+        # board = string of 9 elements '-', 'x' or 'o'
         
         val_old = self.states[board_old]
         val_new = self.states[board_new]
@@ -84,20 +72,20 @@ class Player(object):
         self.states[board_old] -= self.alpha * ( val_new - 1 + val_old )
         
         
-    def save_policy(self, file_name):
+    def save_values(self, file_name):
         file = open(file_name, "w")
         json.dump(self.states, file)
         file.close()
         
         
-    def load_policy(self, file_name):
+    def load_values(self, file_name):
         file = open(file_name, "r")
         self.states = json.load(file)
         file.close()
         
     
     def reduce_alpha(self):
-        self.alpha = max(0.999*self.alpha, 0.001)
+        self.alpha = max(0.9*self.alpha, 0.01)
         
         
     def set_alpha(self, a):
@@ -105,7 +93,7 @@ class Player(object):
 
         
     def has_won(self, board):
-        # board         string of 9 elements '-', 'x' or 'o'
+        # board = string of 9 elements '-', 'x' or 'o'
         
         won = False
 
@@ -121,7 +109,7 @@ class Player(object):
 
 
     def has_lost(self, board):
-    # board         string of 9 elements '-', 'x' or 'o'
+    # board = string of 9 elements '-', 'x' or 'o'
 
         lost = False
 
@@ -142,7 +130,7 @@ win_comb = [ [0,1,2],
              [6,7,8],
              [0,3,6],
              [1,4,7],
-             [3,5,8],
+             [2,5,8],
              [0,4,8],
              [2,4,6] ]
 

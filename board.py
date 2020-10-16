@@ -2,14 +2,14 @@
 # @Author: OctaveOliviers
 # @Date:   2020-09-17 13:04:41
 # @Last Modified by:   OctaveOliviers
-# @Last Modified time: 2020-10-16 19:00:21
+# @Last Modified time: 2020-10-16 19:03:17
 
 import numpy as np
 import copy
 
 class Board:
     """
-    class that represents a tic-tac-toe board
+    tic-tac-toe board
 
     given a certain number of rows and columns, it is possible to add signs to the board,
     check if either of the players has won, compute which positions are still free to play,
@@ -160,6 +160,8 @@ class Board:
         return the number of columns on the board
         """
         return self.ncol
+
+# end class Board
 
 
 def next_is_sign(cur_pos, all_pos, dir):

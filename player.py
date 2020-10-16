@@ -2,7 +2,7 @@
 # @Author: OctaveOliviers
 # @Date:   2020-09-17 13:05:22
 # @Last Modified by:   OctaveOliviers
-# @Last Modified time: 2020-10-16 18:32:11
+# @Last Modified time: 2020-10-16 19:10:51
 
 import itertools
 import random
@@ -14,7 +14,7 @@ extension = '.json'
 
 class Player(object):
     """
-    docstring for Player
+    reinforcement learning agent for tic-tac-toe    
     """
 
     def __init__(self, board=None, **kwargs):
@@ -101,10 +101,16 @@ class Player(object):
 
 
     def playing_mode(self):
+        """
+        set the order for the weight normalisation to infinity
+        """
         self.p = float('inf')
 
 
     def training_mode(self):
+        """
+        set the order for the weight normalisation to self.ord
+        """
         self.p = self.ord
 
 
@@ -121,34 +127,63 @@ class Player(object):
         
     
     def reduce_lr(self):
+        """
+        reduce the learning rate
+        """
         self.lr = max(self.lr_exp*self.lr, self.lr_min)
         
         
     def set_lr(self, lr):
+        """
+        set the learning rate
+        """
         self.lr = lr
 
 
     def get_value(self, state):
+        """
+        return the value of a specific state
+
+            state   (string)    string of signs that represents a board state
+        """
         return self.state2value.get(state)
 
 
     def get_state2value(self):
+        """
+        return the dictionary that contains the state-value mappings
+        """
         return self.state2value
 
 
     def save_values(self, file_name):
+        """
+        save the dictionary that contains the state-value mappings
+
+            file_name   (string)    name of the file without extension
+        """
         file = open(file_name+extension, "w")
         json.dump(self.state2value, file)
         file.close()
         
         
     def load_values(self, file_name):
+        """
+        load the dictionary that contains the state-value mappings
+
+            file_name   (string)    name of the file without extension
+        """
         file = open(file_name+extension, "r")
         self.state2value = json.load(file)
         file.close()
         
     
     def save_args(self, file_args):
+        """
+        save all the parameters of the player
+
+            file_args   (string)    name of the file without extension
+        """
         file_vals = file_args + '-values'
         args = {
             # sign of the agent on the board
@@ -176,6 +211,11 @@ class Player(object):
 
 
     def load_args(self, file_args):
+        """
+        load all the parameters of the player
+
+            file_args   (string)    name of the file without extension
+        """
         file = open(file_args+extension, "r")
         args = json.load(file)
         file.close()
@@ -196,14 +236,16 @@ class Player(object):
         # dict with the state-value mappings
         self.load_values(args.get('file_vals'))
 
+# end class Player
+
 
 def normalize(values, ord):
     """
     normalize a list of values according to norm or order 'ord'
 
-    values  (list of float) list of values to normalize
+        values  (list of float) list of values to normalize
 
-    ord     (int)           order of the norm
+        ord     (int)           order of the norm
     """
     if ord == float('inf'):
         scaled_values = [ 1 if v==max(values) else 0 for v in values ]
@@ -217,7 +259,7 @@ def pairwise(iterable):
     """
     iterate over a list pairwise
 
-    iterable    (iterable element) list of values to iterate over
+        iterable    (iterable element) list of values to iterate over
     """
     a, b = itertools.tee(iterable)
     next(b, None)

@@ -2,8 +2,9 @@
 # @Author: OctaveOliviers
 # @Date:   2020-09-17 13:05:22
 # @Last Modified by:   OctaveOliviers
-# @Last Modified time: 2020-10-16 19:10:51
+# @Last Modified time: 2020-10-25 15:06:32
 
+import numpy as np
 import itertools
 import random
 import copy
@@ -23,20 +24,21 @@ class Player(object):
 
         # order for weighting the probability of each action
         self.ord            = kwargs.get('order', 1)  
+        self.training_mode()
 
         # number of training games
         self.num_train      = kwargs.get('num_train', 1000)
 
         # learning rate
         self.lr             = kwargs.get('lr', 0.5)
-        self.lr_min         = kwargs.get('lr_min', 0.001)
+        self.lr_min         = kwargs.get('lr_min', 0.01)
         self.lr_exp         = kwargs.get('lr_exp', 0.9)
         self.lr_red_steps   = kwargs.get('lr_red_steps', 1000)
 
         # dict with the state-value mappings
         self.state2value    = {}
         # initial value estimate
-        self.init_val       = kwargs.get('init_val', 0.5) 
+        self.init_val       = kwargs.get('init_val', 0.5)
 
 
     def choose_action(self, board):
@@ -89,8 +91,32 @@ class Player(object):
             if n % self.lr_red_steps == 0:
                 self.reduce_lr()
 
+    
+    def update_values(self, reward, board_states):
+        """
+        update the values of the states in board_states
+
+            reward          (float)             reward received at the end of the game
+
+            board_states    (list of strings)   list of board states in which agent had to choose an action
+        """
+        board_states.reverse()
+        # value of the last board state was the reward
+        self.state2value[board_states[0]] = reward
+        # backpropagate value of game to update the policy
+        for state_new, state_old in pairwise(board_states):
+            val_old = self.state2value.get(state_old, self.init_val)
+            val_new = self.state2value.get(state_new, self.init_val)
+
+            self.state2value[state_old] = val_old + self.lr * ( 1-val_new - val_old )
+
 
     def play(self, board):
+        """
+        given a board, choose an action and update the board
+
+            board   (Board)     board that the agent has to play on
+        """
         # no random actions any more
         self.playing_mode()
         # player chooses an action
@@ -112,18 +138,6 @@ class Player(object):
         set the order for the weight normalisation to self.ord
         """
         self.p = self.ord
-
-
-    def update_values(self, reward, board_states):  
-        board_states.reverse()
-        # value of the last board state was the reward
-        self.state2value[board_states[0]] = reward
-        # backpropagate value of game to update the policy
-        for state_new, state_old in pairwise(board_states):
-            val_old = self.state2value.get(state_old, self.init_val)
-            val_new = self.state2value.get(state_new, self.init_val)
-
-            self.state2value[state_old] = val_old + self.lr * ( 1-val_new - val_old )
         
     
     def reduce_lr(self):
@@ -248,11 +262,10 @@ def normalize(values, ord):
         ord     (int)           order of the norm
     """
     if ord == float('inf'):
-        scaled_values = [ 1 if v==max(values) else 0 for v in values ]
+        return [ 1 if v==max(values) else 0 for v in values ]
     else:
         n = sum( [ abs(v)**ord for v in values ] )
-        scaled_values = [ abs(v)**ord/n for v in values ]
-    return scaled_values
+        return [ abs(v)**ord/n for v in values ]
 
 
 def pairwise(iterable):

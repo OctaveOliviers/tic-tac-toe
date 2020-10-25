@@ -4,8 +4,8 @@
 # @Last Modified by:   OctaveOliviers
 # @Last Modified time: 2020-10-23 23:50:13
 
-import numpy as np
 import copy
+import numpy as np
 
 class Board:
     """

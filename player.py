@@ -2,13 +2,14 @@
 # @Author: OctaveOliviers
 # @Date:   2020-09-17 13:05:22
 # @Last Modified by:   OctaveOliviers
-# @Last Modified time: 2020-10-25 15:06:32
+# @Last Modified time: 2020-10-26 08:05:32
 
-import itertools
+
 import random
 import copy
 import json
 from tqdm import trange
+from utils import *
 
 extension = '.json'
 
@@ -250,29 +251,3 @@ class Player(object):
         self.load_values(args.get('file_vals'))
 
 # end class Player
-
-
-def normalize(values, ord):
-    """
-    normalize a list of values according to norm or order 'ord'
-
-        values  (list of float) list of values to normalize
-
-        ord     (int)           order of the norm
-    """
-    if ord == float('inf'):
-        return [ 1 if v==max(values) else 0 for v in values ]
-    else:
-        n = sum( [ abs(v)**ord for v in values ] )
-        return [ abs(v)**ord/n for v in values ]
-
-
-def pairwise(iterable):
-    """
-    iterate over a list pairwise
-
-        iterable    (iterable element) list of values to iterate over
-    """
-    a, b = itertools.tee(iterable)
-    next(b, None)
-    return zip(a, b)

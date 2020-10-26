@@ -2,10 +2,12 @@
 # @Author: OctaveOliviers
 # @Date:   2020-09-17 13:04:41
 # @Last Modified by:   OctaveOliviers
-# @Last Modified time: 2020-10-23 23:50:13
+# @Last Modified time: 2020-10-26 08:05:29
+
 
 import copy
 import numpy as np
+from utils import *
 
 class Board:
     """
@@ -129,7 +131,7 @@ class Board:
 
     def is_full(self):
         """
-        check is there any free positions left onthe board
+        check whether there are any free positions left on the board
         """
         return True if np.count_nonzero(self.state)==self.nrow*self.ncol else False
 
@@ -162,16 +164,3 @@ class Board:
         return self.ncol
 
 # end class Board
-
-
-def next_is_sign(cur_pos, all_pos, dir):
-    """
-    check if position cur_pos + dir is the array all_pos
-
-        cur_pos (1x2 array of int)  current position on the board
-
-        all_pos (nx2 array of int)  n positions on the board
-
-        dir     (1x2 array of int)  the direction in which to search for
-    """
-    return any(np.equal(all_pos,[cur_pos[0]+dir[0],cur_pos[1]+dir[1]]).all(1))

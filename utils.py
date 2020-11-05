@@ -2,11 +2,13 @@
 # @Author: OctaveOliviers
 # @Date:   2020-10-25 16:22:44
 # @Last Modified by:   OctaveOliviers
-# @Last Modified time: 2020-10-26 08:44:54
+# @Last Modified time: 2020-10-31 12:45:30
 
 
 import copy
 import itertools
+import json
+import pandas as pd
 import numpy as np
 
 def normalize(values, ord):
@@ -18,7 +20,8 @@ def normalize(values, ord):
         ord     (int)           order of the norm
     """
     if ord == float('inf'):
-        return [ 1 if v==max(values) else 0 for v in values ]
+        n = sum([ 1 if v==max(values) else 0 for v in values ])
+        return [ 1/n if v==max(values) else 0 for v in values ]
     elif sum(values) == 0:
         return [ 1 for v in values ]
     else:
@@ -77,3 +80,36 @@ def value_deeper(board, agent, order, all_values):
     # weigthed sum of al lnext values
     weights = normalize(next_vals, order)
     return np.dot(weights, next_vals)
+
+
+def save_dict(data=None, file_name=None):
+    """
+    save a dictionary
+        
+        data        (dictionary)
+
+        file_name   (string)    name of the file
+    """
+    file = open(file_name, "w")
+    json.dump(data, file)
+    file.close()
+
+    # df = pd.DataFrame.from_dict(data, orient='columns')
+    # print(df)
+    # df.to_csv(path_or_buf=file_name, float_format='%.3e', header=False)
+
+
+def load_dict(file_name=None):
+    """
+    load a dictionary
+
+        file_name   (string)    name of the file
+    """
+    file = open(file_name, "r")
+    data = json.load(file)
+    file.close()
+    return data    
+
+    # df = pd.read_csv(filepath_or_buffer=file_name)
+    # print(df)
+    # return df.to_dict()

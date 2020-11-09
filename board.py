@@ -2,7 +2,7 @@
 # @Author: OctaveOliviers
 # @Date:   2020-09-17 13:04:41
 # @Last Modified by:   OctaveOliviers
-# @Last Modified time: 2020-10-26 08:05:29
+# @Last Modified time: 2020-11-08 16:19:43
 
 
 import copy
@@ -98,6 +98,13 @@ class Board:
         self.state[row, col] = self.sign2num.get(sign)
 
 
+    def remove(self, row=None, col=None):
+        """
+        explain
+        """
+        self.state[row, col] = self.sign2num.get(self.sign_empty)
+
+
     def sign_won(self, sign):
         """
         check whether the player that plays 'sign' has won
@@ -121,7 +128,7 @@ class Board:
         # if did not find any sequence of length self.len2win 
         return False
 
-
+    
     def is_won(self):
         """
         check whether either of the players has won
@@ -136,11 +143,31 @@ class Board:
         return True if np.count_nonzero(self.state)==self.nrow*self.ncol else False
 
 
+    def is_done(self):
+        """
+        check wether the game is done (someone won or board is full)
+        """
+        return self.is_won() or self.is_full()
+
+
     def get_free_positions(self):
         """
         compute the free positions on the board
         """
         return np.transpose(np.where(self.state==self.sign2num.get(self.sign_empty)))
+
+
+    def get_next_states(self, sign=None):
+        """
+        explain
+        """
+        next_states = []
+        for pos in self.get_free_positions():
+            self.add(sign=sign, row=pos[0], col=pos[1])
+            next_states.append(self.get_state())
+            self.remove(row=pos[0], col=pos[1])
+
+        return next_states
 
 
     def get_state(self):

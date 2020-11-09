@@ -2,7 +2,7 @@
 # @Author: OctaveOliviers
 # @Date:   2020-09-17 13:05:22
 # @Last Modified by:   OctaveOliviers
-# @Last Modified time: 2020-10-31 13:11:17
+# @Last Modified time: 2020-11-08 18:00:21
 
 
 import copy
@@ -52,7 +52,7 @@ class Player(object):
         # dict with the state-value mappings
         self.state2value    = {}
         # initial value estimate
-        self.init_val       = kwargs.get('init_val', 0.5)
+        self.init_val       = kwargs.get('init_val', RWD_DRAW)
 
         # name of player used for saving parameters
         self.name           = datetime.now().strftime("%y%m%d-%H%M")
@@ -147,18 +147,97 @@ class Player(object):
         """
         explanation   
         """
-        # free board positions
-        free_pos    = board.get_free_positions()
         # next possible states
-        next_states = []
-        for pos in free_pos:
-            next_board = copy.deepcopy(board)
-            next_board.add(sign=self.sign, row=pos[0], col=pos[1])
-            next_states.append(next_board.get_state())
-        # get value for each possible next state
+        next_states = board.get_next_states(sign=self.sign)    
+        # get value for each next state
         next_values = [self.state2value.get(state, self.init_val) for state in next_states]
         # randomly select action according to weights in next_values
-        return random.choices(free_pos, weights=normalize(next_values, self.ord))[0]
+        return random.choices(board.get_free_positions(), weights=normalize(next_values, self.ord))[0]
+
+
+    def choose_action_mcts(self, board, num_sim=10**3, return_dicts=False):
+        """
+        explain Monte Carlo Tree Search
+        """
+        N = {}      # visit count
+        # W = {}      # total action value
+        Q = {}      # mean action value
+        P = {}      # prior probability of that action, {} or could load existing dictionary
+        c = 1       # exploration/exploitation trade-off
+
+        # perform the simulations
+        for n in trange(num_sim):
+            N, Q = self.mcts_simulation(board, N, Q, P, c)
+
+        # next possible states
+        next_states = board.get_next_states(sign=self.sign)    
+        # get count for each next state
+        next_counts = [N.get(state, 0) for state in next_states]
+        # randomly select action according to weights in next_counts
+        action = random.choices(board.get_free_positions(), weights=normalize(next_counts, self.ord))[0]
+
+        return action, N, Q if return_dicts else action
+
+
+    def mcts_simulation(self, board, N, Q, P, c):
+        """
+        explain: select, expand and evaluate, backup
+        """
+        # play on a copy of the board
+        board_cpy = copy.deepcopy(board)
+        # store all the states of this MCTS simulation
+        board_states = []
+
+        # assume that the game will be a draw
+        reward = RWD_DRAW
+        while not board_cpy.is_full():
+
+            # update visit count (necessary because of self-play = inverse board)
+            N[board_cpy.get_state()] = N.get(board_cpy.get_state(), 0) + 1
+
+            # evaluate possible actions
+            next_states = board_cpy.get_next_states(sign=self.sign)
+            ucb_state   = []
+            for state in next_states:
+                q  = Q.get(state, self.init_val)
+                p  = P.get(state, 1/len(next_states))
+                na = N.get(state, 0)
+                nb = N.get(board_cpy.get_state())
+                # print('ratio           = ', math.sqrt(nb) / (1+na))
+                # print('num next states = ', len(next_states))
+                # print('N(s,a)          = ', na)
+                ucb_state.append(q + c * p * math.sqrt(nb) / (1+na))
+
+            print(["{0:0.2f}".format(v) for v in ucb_state])
+
+            # select action that maximizes the UCB value
+            action = random.choices(board_cpy.get_free_positions(), weights=normalize(ucb_state, float('inf')))[0]
+            # take action
+            board_cpy.add(sign=self.sign, row=action[0], col=action[1])
+            # update visit count
+            N[board_cpy.get_state()] = N.get(board_cpy.get_state(), 0) + 1
+            # add board state to list of visited states
+            board_states.append(board_cpy.get_state())
+
+            # check if player won
+            if board_cpy.is_won(): 
+                reward = RWD_WIN
+                break
+            # if nobody won yet, inverse the board
+            board_cpy.inverse()   
+            
+        # backup
+        board_states.reverse()
+        # update each board value
+        for state in board_states:
+            q = Q.get(state, self.init_val)
+            n = N.get(state)
+            # incremental mean formula
+            Q[state] = q + (reward - q) / n
+            # inverse reward due to self-play
+            reward = self.inv_reward(reward)
+
+        return N, Q
 
 
     def compute_convergence(self):
@@ -277,22 +356,6 @@ class Player(object):
         """
         ord2str = str(self.ord) if self.ord == float('inf') else str(int(self.ord))
         self.conv_vals = load_dict(file_name=VALUE_FOLDER+'order-'+ord2str+EXTENSION)
-
-
-    # def playing_mode(self):
-    #     """
-    #     set the order for the weight normalisation to infinity
-    #     """
-    #     self.increase_order(new_val=float('inf'))
-
-
-    # def training_mode(self):
-    #     """
-    #     set the order for the weight normalisation to self.ord
-    #     """
-    #     self.p = self.ord
-    #     # load the values towards which training converges
-    #     self.conv_vals = load_dict(file_name=VALUE_FOLDER+'order-'+str(self.ord)+EXTENSION)
     
 
     def set_lr(self, new_lr):

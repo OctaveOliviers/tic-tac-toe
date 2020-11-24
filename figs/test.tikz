@@ -1,0 +1,28 @@
+\begin{tikzpicture}
+	\begin{pgfonlayer}{nodelayer}
+		\node [style=none] (0) at (-6, 6) {};
+		\node [style=none] (1) at (0, 6) {};
+		\node [style=none] (2) at (0, 0) {};
+		\node [style=none] (3) at (-6, 0) {};
+		\node [style=none] (4) at (-4, 6) {};
+		\node [style=none] (5) at (-2, 6) {};
+		\node [style=none] (6) at (0, 4) {};
+		\node [style=none] (7) at (0, 2) {};
+		\node [style=none] (8) at (-2, 0) {};
+		\node [style=none] (9) at (-4, 0) {};
+		\node [style=none] (10) at (-6, 2) {};
+		\node [style=none] (11) at (-6, 4) {};
+		\node [style=white dot] (12) at (-1, 5) {};
+	\end{pgfonlayer}
+	\begin{pgfonlayer}{edgelayer}
+		\draw [style=board] (2.center)
+			 to (3.center)
+			 to (0.center)
+			 to (1.center)
+			 to cycle;
+		\draw [style=black line, thick] (11.center) to (6.center);
+		\draw [style=black line, thick] (7.center) to (10.center);
+		\draw [style=black line] (4.center) to (9.center);
+		\draw [style=black line] (8.center) to (5.center);
+	\end{pgfonlayer}
+\end{tikzpicture}

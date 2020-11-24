@@ -2,7 +2,7 @@
 # @Author: OctaveOliviers
 # @Date:   2020-09-17 13:05:22
 # @Last Modified by:   OctaveOliviers
-# @Last Modified time: 2020-11-08 18:00:21
+# @Last Modified time: 2020-11-16 10:19:51
 
 
 import copy
@@ -86,7 +86,7 @@ class Player(object):
 
         if store_convergence:
             # load values towards which will converge
-            self.load_conv_val()
+            self.load_conv_val(nrow=board.get_nrow(), ncol=board.get_ncol())
             # store convergence data (mean and std error)
             conv_data = np.zeros((self.num_train,2))
             for n in trange(self.num_train):
@@ -140,7 +140,7 @@ class Player(object):
 
         # increase order progressively
         if (game_num+1) % self.ord_incr_steps == 0:
-            self.increase_order(store_convergence)
+            self.increase_order(store_convergence, nrow=board.get_nrow(), ncol=board.get_ncol())
     
 
     def choose_action(self, board):
@@ -197,7 +197,7 @@ class Player(object):
 
             # evaluate possible actions
             next_states = board_cpy.get_next_states(sign=self.sign)
-            ucb_state   = []
+            ucb_states  = []
             for state in next_states:
                 q  = Q.get(state, self.init_val)
                 p  = P.get(state, 1/len(next_states))
@@ -206,12 +206,12 @@ class Player(object):
                 # print('ratio           = ', math.sqrt(nb) / (1+na))
                 # print('num next states = ', len(next_states))
                 # print('N(s,a)          = ', na)
-                ucb_state.append(q + c * p * math.sqrt(nb) / (1+na))
+                ucb_states.append(q + c * p * math.sqrt(nb) / (1+na))
 
-            print(["{0:0.2f}".format(v) for v in ucb_state])
+            # print(["{0:0.2f}".format(v) for v in ucb_states])
 
             # select action that maximizes the UCB value
-            action = random.choices(board_cpy.get_free_positions(), weights=normalize(ucb_state, float('inf')))[0]
+            action = random.choices(board_cpy.get_free_positions(), weights=normalize(ucb_states, float('inf')))[0]
             # take action
             board_cpy.add(sign=self.sign, row=action[0], col=action[1])
             # update visit count
@@ -342,20 +342,20 @@ class Player(object):
         self.ord = new_ord 
 
 
-    def increase_order(self, store_convergence):
+    def increase_order(self, store_convergence, **kwargs):
         """
         explanation
         """
         self.ord = min(self.ord_exp*max(self.ord, 1/self.ord_exp), self.ord_max)
-        if store_convergence : self.load_conv_val()
+        if store_convergence : self.load_conv_val(nrow=kwargs.get('nrow'), ncol=kwargs.get('ncol'))
      
 
-    def load_conv_val(self):
+    def load_conv_val(self, nrow=None, ncol=None):
         """
         load the values towards which training converges
         """
         ord2str = str(self.ord) if self.ord == float('inf') else str(int(self.ord))
-        self.conv_vals = load_dict(file_name=VALUE_FOLDER+'order-'+ord2str+EXTENSION)
+        self.conv_vals = load_dict(file_name=VALUE_FOLDER+str(nrow)+'x'+str(ncol)+'/order-'+ord2str+EXTENSION)
     
 
     def set_lr(self, new_lr):

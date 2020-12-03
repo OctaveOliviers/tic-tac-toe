@@ -2,13 +2,14 @@
 # @Author: OctaveOliviers
 # @Date:   2020-09-17 13:05:22
 # @Last Modified by:   OctaveOliviers
-# @Last Modified time: 2020-11-16 10:19:51
+# @Last Modified time: 2020-12-02 09:00:19
 
 
 import copy
 import json
 import math
 import random
+from multiprocessing import Pool
 from datetime import datetime
 from tqdm import trange
 from utils import *
@@ -167,7 +168,7 @@ class Player(object):
 
         # perform the simulations
         for n in trange(num_sim):
-            N, Q = self.mcts_simulation(board, N, Q, P, c)
+            self.mcts_simulation(board, N, Q, P, c)
 
         # next possible states
         next_states = board.get_next_states(sign=self.sign)    
@@ -203,12 +204,7 @@ class Player(object):
                 p  = P.get(state, 1/len(next_states))
                 na = N.get(state, 0)
                 nb = N.get(board_cpy.get_state())
-                # print('ratio           = ', math.sqrt(nb) / (1+na))
-                # print('num next states = ', len(next_states))
-                # print('N(s,a)          = ', na)
                 ucb_states.append(q + c * p * math.sqrt(nb) / (1+na))
-
-            # print(["{0:0.2f}".format(v) for v in ucb_states])
 
             # select action that maximizes the UCB value
             action = random.choices(board_cpy.get_free_positions(), weights=normalize(ucb_states, float('inf')))[0]
@@ -236,8 +232,6 @@ class Player(object):
             Q[state] = q + (reward - q) / n
             # inverse reward due to self-play
             reward = self.inv_reward(reward)
-
-        return N, Q
 
 
     def compute_convergence(self):
@@ -355,7 +349,7 @@ class Player(object):
         load the values towards which training converges
         """
         ord2str = str(self.ord) if self.ord == float('inf') else str(int(self.ord))
-        self.conv_vals = load_dict(file_name=VALUE_FOLDER+str(nrow)+'x'+str(ncol)+'/order-'+ord2str+EXTENSION)
+        self.conv_vals = load_dict(file_name=f"{VALUE_FOLDER}{nrow}x{ncol}/order-{ord2str}{EXTENSION}")
     
 
     def set_lr(self, new_lr):

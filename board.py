@@ -2,7 +2,7 @@
 # @Author: OctaveOliviers
 # @Date:   2020-09-17 13:04:41
 # @Last Modified by:   OctaveOliviers
-# @Last Modified time: 2020-11-08 16:19:43
+# @Last Modified time: 2020-12-02 08:29:40
 
 
 import copy
@@ -175,6 +175,13 @@ class Board:
         return a string with the signs on the board in row-major order
         """
         return ''.join([ self.num2sign.get(n) for n in self.state.flatten() ])
+
+
+    def set_state(self, state):
+        """
+        set the board to a given state (state in row-major order)
+        """
+        self.state = np.reshape([ self.sign2num.get(n) for n in state ], (self.nrow, self.ncol))
 
 
     def get_nrow(self):

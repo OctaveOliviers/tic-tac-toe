@@ -2,7 +2,7 @@
 # @Author: OctaveOliviers
 # @Date:   2020-09-17 13:04:41
 # @Last Modified by:   OctaveOliviers
-# @Last Modified time: 2020-12-02 08:29:40
+# @Last Modified time: 2020-12-05 13:36:22
 
 
 import copy
@@ -175,6 +175,13 @@ class Board:
         return a string with the signs on the board in row-major order
         """
         return ''.join([ self.num2sign.get(n) for n in self.state.flatten() ])
+
+
+    def get_board(self):
+        """
+        explain
+        """
+        return self.state
 
 
     def set_state(self, state):

@@ -2,7 +2,7 @@
 # @Author: OctaveOliviers
 # @Date:   2020-09-17 13:05:22
 # @Last Modified by:   OctaveOliviers
-# @Last Modified time: 2020-12-04 09:58:59
+# @Last Modified time: 2020-12-05 13:57:31
 
 
 import copy
@@ -18,16 +18,7 @@ from multiprocessing import Pool
 from datetime import datetime
 from tqdm import trange
 from utils import *
-
-
-EXTENSION = '.json'
-VALUE_FOLDER = 'data/values/'
-AGENT_FOLDER = 'data/agent/'
-# CONVERGENCE_FOLDER = 'data/convergence/'
-# value of rewards
-RWD_WIN = 1
-RWD_DRAW = 0.5
-RWD_LOOSE = 0
+from parameters import *
 
 
 class Agent:
@@ -59,10 +50,6 @@ class Agent:
 
         # name of agent used for saving parameters
         self.name           = datetime.now().strftime("%y%m%d-%H%M")
-
-
-    # function to inverse rewards
-    inv_reward = getattr(self, 'inv_reward_01') if RWD_LOOSE == 0 else getattr(self, 'inv_reward_m11')
 
 
     def choose_action(self, board):
@@ -152,7 +139,7 @@ class Agent:
             # incremental mean formula
             Q[state] = q + (reward - q) / n
             # inverse reward due to self-play
-            reward = self.inv_reward(reward)
+            reward = inv_reward(reward)
 
 
     def play(self, board):
@@ -166,20 +153,6 @@ class Agent:
         # update board
         board.add(sign=self.sign, row=action[0], col=action[1])
         return board
-
-
-    def inv_reward_01(self, r):
-        """
-        explanation
-        """
-        return 1-r
-
-
-    def inv_reward_m11(self, r):
-        """
-        explanation
-        """
-        return -r
 
 
     def set_order(self, new_ord):
@@ -388,7 +361,7 @@ class Agent_Dict(Agent):
             val_old = self.state2value.get(state_old, self.init_val)
             val_new = self.state2value.get(state_new, self.init_val)
 
-            self.state2value[state_old] = val_old + self.lr * ( self.inv_reward(val_new) - val_old )
+            self.state2value[state_old] = val_old + self.lr * ( inv_reward(val_new) - val_old )
 
 
     def az_update(self, reward, board_states):
@@ -403,7 +376,7 @@ class Agent_Dict(Agent):
             # get current estimate for value in that state
             val = self.state2value.get(state, self.init_val)
             # inverse reward due to self-play
-            reward = self.inv_reward(reward)
+            reward = inv_reward(reward)
             # update estimate for value in that state
             self.state2value[state] = val + self.lr * ( reward - val )
      

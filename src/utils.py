@@ -2,14 +2,32 @@
 # @Author: OctaveOliviers
 # @Date:   2020-10-25 16:22:44
 # @Last Modified by:   OctaveOliviers
-# @Last Modified time: 2020-12-02 12:45:36
+# @Last Modified time: 2020-12-05 14:07:33
 
+
+from parameters import *
 
 import copy
 import itertools
 import json
 # import pandas as pd
 import numpy as np
+
+
+inv_reward = lambda r : -r if (RWD_LOOSE == -RWD_WIN) else 1-r
+
+# def inv_reward_01(r):
+#         """
+#         explanation
+#         """
+#         return 1-r
+
+# def inv_reward_m11(r):
+#     """
+#     explanation
+#     """
+#     return -r
+
 
 def normalize(values, ord):
     """
@@ -53,7 +71,7 @@ def next_is_sign(cur_pos, all_pos, dir):
     return any(np.equal(all_pos,[cur_pos[0]+dir[0],cur_pos[1]+dir[1]]).all(1))
 
 
-def value_deeper(board, agent, order, all_values):
+def value_deeper(board, sign_agent, order, all_values):
     """
     compute values to which training converges
     """
@@ -62,18 +80,18 @@ def value_deeper(board, agent, order, all_values):
     for pos in free_pos:
         # add symbol on that new position
         next_board = copy.deepcopy(board)
-        next_board.add(sign=agent, row=pos[0], col=pos[1])
+        next_board.add(sign=sign_agent, row=pos[0], col=pos[1])
         next_board_state = next_board.get_state()
         # if win
         if next_board.is_won(): 
-            val = 1
+            val = RWD_WIN
         # if draw
         elif next_board.is_full():
-            val = 0.5
+            val = RWD_DRAW
         # if game not done
         else:
             next_board.inverse()
-            val = 1 - value_deeper(next_board, agent, order, all_values)
+            val = rwd_inverse(value_deeper(next_board, sign_agent, order, all_values))
         
         all_values[next_board_state] = val
         next_vals.append(val)

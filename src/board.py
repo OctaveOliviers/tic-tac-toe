@@ -2,8 +2,11 @@
 # @Author: OctaveOliviers
 # @Date:   2020-09-17 13:04:41
 # @Last Modified by:   OctaveOliviers
-# @Last Modified time: 2020-12-05 13:36:22
+# @Last Modified time: 2020-12-06 13:21:57
 
+
+# TODO : implement as OpenAI environment
+# https://www.tensorflow.org/agents/tutorials/2_environments_tutorial
 
 import copy
 import numpy as np
@@ -148,6 +151,15 @@ class Board:
         check wether the game is done (someone won or board is full)
         """
         return self.is_won() or self.is_full()
+
+
+    def is_turn_sign(self, sign=None):
+        """
+        check whether it is the turn of the 'sign'-player to play
+        """
+        # opponent sign
+        opp_sign = self.sign_play[1-self.sign_play.index(sign)]
+        return (self.get_state().count(sign) <= self.get_state().count(opp_sign)) and (not self.is_done())
 
 
     def get_free_positions(self):

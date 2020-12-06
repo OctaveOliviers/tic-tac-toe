@@ -2,7 +2,7 @@
 # @Author: OctaveOliviers
 # @Date:   2020-10-25 16:22:44
 # @Last Modified by:   OctaveOliviers
-# @Last Modified time: 2020-12-05 14:07:33
+# @Last Modified time: 2020-12-06 12:31:07
 
 
 from parameters import *
@@ -95,7 +95,7 @@ def value_deeper(board, sign_agent, order, all_values):
         
         all_values[next_board_state] = val
         next_vals.append(val)
-    # weigthed sum of al lnext values
+    # weigthed sum of all next values
     weights = normalize(next_vals, order)
     return np.dot(weights, next_vals)
 

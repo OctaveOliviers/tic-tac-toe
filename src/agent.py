@@ -2,7 +2,7 @@
 # @Author: OctaveOliviers
 # @Date:   2020-09-17 13:05:22
 # @Last Modified by:   OctaveOliviers
-# @Last Modified time: 2020-12-05 13:57:31
+# @Last Modified time: 2020-12-06 11:32:02
 
 
 import copy
@@ -56,10 +56,8 @@ class Agent:
         """
         explanation   
         """
-        # next possible states
-        next_states = board.get_next_states(sign=self.sign)    
         # get value for each next state
-        next_values = [self.get_value(state) for state in next_states]
+        next_values = self.get_next_values(board)
         # randomly select action according to weights in next_values
         return random.choices(board.get_free_positions(), weights=normalize(next_values, self.ord))[0]
 
@@ -190,15 +188,13 @@ class Agent:
         reduce the learning rate
         """
         self.lr = max(self.lr_exp*self.lr, self.lr_min)
-    
 
-    # def get_value(self, state):
-    #     """
-    #     return the value of a specific state
 
-    #         state   (string)    string of signs that represents a board state
-    #     """
-    #     return self.state2value.get(state)
+    def get_next_values(self, board):
+        """
+        explain
+        """
+        return [self.get_value(state) for state in board.get_next_states(sign=self.sign)]
 
 
     def save_args(self, file_args):
@@ -456,6 +452,11 @@ class Agent_Dict(Agent):
 class Agent_Neural(Agent):
     """docstring for Agent_Neural"""
 
+    # implemment paralllel training with tf-agents
+    # prl_env = ParallelPyEnvironment(...)
+    # tf_env = TFPyEnvironment(prl_env)
+
+
     def __init__(self, **kwargs):
         """
         explanation   
@@ -505,10 +506,16 @@ class Agent_Neural(Agent):
 
 
     def train_network(self, board):
-
+        """
+        explain
+        """
         self.build_network(inp_hei=board.get_nrow(), inp_wid=board.get_ncol())
 
 
     def get_value(self, state):
+        """
+        explain
+        """
+        pass
 
 # end class Agent_Neural

@@ -2,7 +2,7 @@
 # @Author: OctaveOliviers
 # @Date:   2020-10-25 16:22:44
 # @Last Modified by:   OctaveOliviers
-# @Last Modified time: 2020-12-06 12:31:07
+# @Last Modified time: 2021-01-07 21:33:36
 
 
 from parameters import *
@@ -10,9 +10,11 @@ from parameters import *
 import copy
 import itertools
 import json
+import random
 # import pandas as pd
 import numpy as np
-
+import datetime as dt
+from tqdm import trange
 
 inv_reward = lambda r : -r if (RWD_LOOSE == -RWD_WIN) else 1-r
 
@@ -131,3 +133,83 @@ def load_dict(file_name=None):
     # df = pd.read_csv(filepath_or_buffer=file_name)
     # print(df)
     # return df.to_dict()
+
+
+def monte_carlo_early_start(structure=None, transitions=None, rewards=None, prior=None, gamma=None, num_epi = 1000, len_epi = 10):
+    """
+    explain
+
+        structure       numpy array of size ( num state-actions x num states )
+
+        transitions     numpy array of size ( num states x num state-actions )
+
+        rewards         numpy array of size ( num state-actions )
+
+        prior           numpy array of size ( num state-actions )
+
+        gamma           float in [0,1]
+    """
+    # set seed of random number generator
+    np.random.seed(seed=dt.datetime.now().year)
+
+    # extract usefull info
+    num_s  = structure.shape[1]
+    num_sa = structure.shape[0]
+
+    # initialize policy matrix
+    policy = np.multiply(structure, np.random.rand(num_sa, num_s))
+    policy = policy / np.sum(policy, 0)
+    # initialize vector of q-values
+    q = np.random.rand(num_sa,)
+    # number of times that each state-action is visited
+    n = np.zeros(num_sa,)
+
+    # loop until convergence
+    # converged = False
+    # while not converged:
+    for k in trange(num_epi):
+        # store the state-actions and rewards encountered in the episode
+        z = []
+        r = []
+
+        # choose initial state-action pair according to weights in prior
+        z.append(random.choices([i for i in range(num_sa)], weights=prior)[0])
+        # store reward of initial state-action
+        r.append(rewards[z[-1]])
+        # update number of visits of initial state-action
+        n[z[-1]] += 1
+
+        # generate an episode from initial state
+        # converged = False
+        # while not converged:
+        for t in range(len_epi):
+            # go to new state-action
+            z.append(random.choices([i for i in range(num_sa)], weights=np.matmul(policy, transitions)[:,z[-1]])[0])
+            # store reward of new state-action
+            r.append(rewards[z[-1]])
+            # update number of visits of new state-action
+            n[z[-1]] += 1
+
+        # update q-estimates backwards
+        g = 0
+        z.reverse()
+        r.reverse()
+        for t in range(len_epi):
+            # update goal value
+            g = gamma*g + r[t]
+            # update q-estimate with incremetnal mean formula
+            # TODO update incremental mean formula because is not correct
+            # problem when go several times through same state-action within same episode
+            q[z[t]] += (g - q[z[t]]) / n[z[t]]
+
+        # update policy
+        policy = np.zeros((num_sa, num_s))
+        for s in range(num_s):
+            # find actions of that state
+            sa =  np.nonzero(structure[:,s])[0]
+            # maximal q value in state s
+            max_q = np.max(q[sa])
+            # choose the action with maximal q-value
+            policy[np.where(q[sa]==max_q)[0][0], s] = 1
+
+    return q

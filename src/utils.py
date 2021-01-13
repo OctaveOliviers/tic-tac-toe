@@ -2,7 +2,7 @@
 # @Author: OctaveOliviers
 # @Date:   2020-10-25 16:22:44
 # @Last Modified by:   OctaveOliviers
-# @Last Modified time: 2021-01-07 21:33:36
+# @Last Modified time: 2021-01-12 17:40:12
 
 
 from parameters import *
@@ -135,7 +135,7 @@ def load_dict(file_name=None):
     # return df.to_dict()
 
 
-def monte_carlo_early_start(structure=None, transitions=None, rewards=None, prior=None, gamma=None, num_epi = 1000, len_epi = 10):
+def monte_carlo_early_start(structure=None, transitions=None, rewards=None, prior=None, discount=None, num_epi = 200, len_epi = 20):
     """
     explain
 
@@ -150,66 +150,176 @@ def monte_carlo_early_start(structure=None, transitions=None, rewards=None, prio
         gamma           float in [0,1]
     """
     # set seed of random number generator
-    np.random.seed(seed=dt.datetime.now().year)
+    np.random.seed(seed=dt.datetime.now().day)
 
-    # extract usefull info
-    num_s  = structure.shape[1]
-    num_sa = structure.shape[0]
+    # extract useful info
+    num_sa,num_s = structure.shape
 
-    # initialize policy matrix
-    policy = np.multiply(structure, np.random.rand(num_sa, num_s))
-    policy = policy / np.sum(policy, 0)
     # initialize vector of q-values
     q = np.random.rand(num_sa,)
+    # compute policy matrix from q-values
+    policy = compute_policy(S=structure, q=q)
     # number of times that each state-action is visited
     n = np.zeros(num_sa,)
 
+    V_old = compute_potential(policy, transitions, rewards, prior, q, discount, len_epi)
+    pol_old = policy
+    pol_new = policy
+
     # loop until convergence
-    # converged = False
-    # while not converged:
-    for k in trange(num_epi):
+    for k in range(num_epi):
+
+        # test if this value increases
+        #inv_mat = np.linalg.inv( np.eye(num_sa) - discount * np.transpose(np.matmul(policy, transitions)) )
+        #print(f" does this value increase ? {np.sum(np.matmul( inv_mat, rewards ))} ")
+        
+        if not np.array_equal(pol_old, pol_new): print(f"policy changed")
+        pol_old = pol_new
+
+        V_new = compute_potential(policy, transitions, rewards, prior, q, discount, len_epi)
+        print(f"potential is V = {V_new}")
+        print(f"number of visits {n}")
+        #print(f"potential increases? {V_old <= V_new}")
+        #V_old = V_new
+        
+
         # store the state-actions and rewards encountered in the episode
         z = []
         r = []
+        # store number of visits of each state-action in this episode
+        n_epi = np.zeros(num_sa,)
 
         # choose initial state-action pair according to weights in prior
         z.append(random.choices([i for i in range(num_sa)], weights=prior)[0])
         # store reward of initial state-action
         r.append(rewards[z[-1]])
         # update number of visits of initial state-action
-        n[z[-1]] += 1
+        n_epi[z[-1]] += 1
 
         # generate an episode from initial state
-        # converged = False
-        # while not converged:
         for t in range(len_epi):
             # go to new state-action
-            z.append(random.choices([i for i in range(num_sa)], weights=np.matmul(policy, transitions)[:,z[-1]])[0])
+            z.append(random.choices([i for i in range(num_sa)], weights=np.matmul(policy,transitions)[:,z[-1]])[0])
             # store reward of new state-action
             r.append(rewards[z[-1]])
             # update number of visits of new state-action
-            n[z[-1]] += 1
+            n_epi[z[-1]] += 1
 
-        # update q-estimates backwards
-        g = 0
-        z.reverse()
-        r.reverse()
-        for t in range(len_epi):
-            # update goal value
-            g = gamma*g + r[t]
-            # update q-estimate with incremetnal mean formula
-            # TODO update incremental mean formula because is not correct
-            # problem when go several times through same state-action within same episode
-            q[z[t]] += (g - q[z[t]]) / n[z[t]]
+        # update total number of visits of each state-action
+        n += n_epi
 
-        # update policy
-        policy = np.zeros((num_sa, num_s))
-        for s in range(num_s):
-            # find actions of that state
-            sa =  np.nonzero(structure[:,s])[0]
-            # maximal q value in state s
-            max_q = np.max(q[sa])
-            # choose the action with maximal q-value
-            policy[np.where(q[sa]==max_q)[0][0], s] = 1
+        # update q-estimates
+        update_q_values(q=q, z=z, r=r, n=n, n_epi=n_epi, gam=discount)
+        # compute policy matrix from q-values
+        policy = compute_policy(S=structure, q=q)
 
+        pol_new = policy
+    
     return q
+
+
+def update_q_values(q=None, z=None, r=None, n=None, n_epi=None, gam=None):
+    """
+    explain
+    """
+    # extract useful info
+    len_epi = len(z)
+
+    # goal value
+    g = 0
+    # update backwards
+    z.reverse()
+    r.reverse()
+    # loop over each step of the episode
+    for t in range(len_epi):
+        # update goal value
+        g = gam*g + r[t]
+
+        # update q-estimate with incremetnal mean formula
+        n_epi[z[t]] -= 1
+        q[z[t]] += (g - q[z[t]]) / (n[z[t]] - n_epi[z[t]])
+
+
+def compute_policy(S=None, q=None):
+    """
+    explain
+    """
+    # extract useful info
+    num_sa,num_s = S.shape
+
+    # policy matrix
+    P = np.zeros((num_sa, num_s))
+    # for each state choose action with highest q-value
+    for s in range(num_s):
+        # find actions of that state
+        sa = np.nonzero(S[:,s])[0]
+        # index of maximal q value in state s
+        idx_max_q = np.argmax(q[sa])
+        # choose the action with maximal q-value
+        P[sa[idx_max_q], s] = 1
+        
+    return P
+    
+    
+def compute_potential(P, T, r, p, q, gam, len_epi):
+    """
+    explain
+    """
+    # extract useful info
+    num_sa,num_s = P.shape
+    
+    A = np.matmul(P,T)
+
+    diag = np.zeros(num_sa,)
+    block = np.zeros((num_sa, num_sa))
+
+    V = 0
+
+    for l in range(len_epi+1):
+        # [I + gam A.T + ... + gam^(L-l) A.T^(L-l)]
+        mat_sum = np.matmul(np.linalg.inv(np.eye(num_sa)-gam*A.T), 
+                           (np.eye(num_sa)-gam**(len_epi+1-l)*np.linalg.matrix_power(A.T,len_epi+1-l)))
+        # A^l p
+        Al_p = np.matmul(np.linalg.matrix_power(A,l), p)
+        # diag(p + A p + ... + A^l p)
+        diag += Al_p
+        # [diag(p) [I + ... + gam^L A.T^L] + ... + diag(A^L p) [I]]
+        block += np.matmul(np.diag(Al_p), mat_sum)
+
+    V += np.matmul(q.T*diag, q) /2
+
+    V -= np.matmul(np.matmul(r.T, block.T), q)
+    
+    # V += np.matmul(np.matmul(r.T, block.T), np.matmul(block, r)/diag) /2
+
+    return V
+    
+
+def compute_potential_old(P, T, r, p, q, gam, len_epi):
+    """
+    explain
+    """
+    # extract useful info
+    num_sa,num_s = P.shape
+    
+    A = np.matmul(P,T)
+    V = 0
+
+    for l in range(len_epi+1):
+        
+        mat_sum = np.matmul(np.linalg.inv(np.eye(num_sa)-gam*A), 
+                           (np.eye(num_sa)-gam**(len_epi+1-l)*np.linalg.matrix_power(A,len_epi+1-l)))
+        
+        V += np.matmul(q.T*np.matmul(np.linalg.matrix_power(A,l), p), q) /2
+
+        V -= np.matmul(np.matmul(r.T, mat_sum), np.matmul(np.linalg.matrix_power(A,l), p)*q)
+    
+    return V
+    
+    
+    
+    
+    
+    
+    
+        

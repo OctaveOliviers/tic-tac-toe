@@ -2,7 +2,7 @@
 # @Author: OctaveOliviers
 # @Date:   2020-10-25 16:22:44
 # @Last Modified by:   OctaveOliviers
-# @Last Modified time: 2021-01-12 17:40:12
+# @Last Modified time: 2021-01-14 13:34:11
 
 
 from parameters import *
@@ -135,7 +135,7 @@ def load_dict(file_name=None):
     # return df.to_dict()
 
 
-def monte_carlo_early_start(structure=None, transitions=None, rewards=None, prior=None, discount=None, num_epi = 200, len_epi = 20):
+def monte_carlo_early_start(structure=None, transitions=None, rewards=None, prior=None, discount=None, num_epi = 50, len_epi = 20):
     """
     explain
 
@@ -162,9 +162,11 @@ def monte_carlo_early_start(structure=None, transitions=None, rewards=None, prio
     # number of times that each state-action is visited
     n = np.zeros(num_sa,)
 
-    V_old = compute_potential(policy, transitions, rewards, prior, q, discount, len_epi)
+    V_old, val_old = compute_potential(policy, transitions, rewards, prior, q, discount, len_epi)
     pol_old = policy
     pol_new = policy
+    print(f"policy changed to {pol_old}")
+    print(f"value of policy {np.sum(val_old)}")
 
     # loop until convergence
     for k in range(num_epi):
@@ -173,12 +175,17 @@ def monte_carlo_early_start(structure=None, transitions=None, rewards=None, prio
         #inv_mat = np.linalg.inv( np.eye(num_sa) - discount * np.transpose(np.matmul(policy, transitions)) )
         #print(f" does this value increase ? {np.sum(np.matmul( inv_mat, rewards ))} ")
         
-        if not np.array_equal(pol_old, pol_new): print(f"policy changed")
-        pol_old = pol_new
+        V_new, val_new = compute_potential(policy, transitions, rewards, prior, q, discount, len_epi)
 
-        V_new = compute_potential(policy, transitions, rewards, prior, q, discount, len_epi)
+        if not np.array_equal(pol_old, pol_new): 
+            print(f"policy changed to {policy}")
+            print(f"value of policy {np.sum(val_new)}")
+
+        pol_old = pol_new
+        
         print(f"potential is V = {V_new}")
-        print(f"number of visits {n}")
+        
+        # print(f"number of visits {n}")
         #print(f"potential increases? {V_old <= V_new}")
         #V_old = V_new
         
@@ -290,36 +297,9 @@ def compute_potential(P, T, r, p, q, gam, len_epi):
 
     V -= np.matmul(np.matmul(r.T, block.T), q)
     
-    # V += np.matmul(np.matmul(r.T, block.T), np.matmul(block, r)/diag) /2
+    V += np.matmul(np.matmul(r.T, block.T), np.matmul(block, r)/diag) /2
 
-    return V
-    
+    # val = np.matmul(P.T, np.matmul(block, r)/diag)
+    val = - np.matmul( np.matmul(r.T, block.T)/diag, np.matmul(block, r) ) /2
 
-def compute_potential_old(P, T, r, p, q, gam, len_epi):
-    """
-    explain
-    """
-    # extract useful info
-    num_sa,num_s = P.shape
-    
-    A = np.matmul(P,T)
-    V = 0
-
-    for l in range(len_epi+1):
-        
-        mat_sum = np.matmul(np.linalg.inv(np.eye(num_sa)-gam*A), 
-                           (np.eye(num_sa)-gam**(len_epi+1-l)*np.linalg.matrix_power(A,len_epi+1-l)))
-        
-        V += np.matmul(q.T*np.matmul(np.linalg.matrix_power(A,l), p), q) /2
-
-        V -= np.matmul(np.matmul(r.T, mat_sum), np.matmul(np.linalg.matrix_power(A,l), p)*q)
-    
-    return V
-    
-    
-    
-    
-    
-    
-    
-        
+    return V, val

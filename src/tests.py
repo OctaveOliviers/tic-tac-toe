@@ -2,7 +2,7 @@
 # @Author: OctaveOliviers
 # @Date:   2021-01-07 21:11:19
 # @Last Modified by:   OctaveOliviers
-# @Last Modified time: 2021-01-14 18:13:06
+# @Last Modified time: 2021-01-15 12:48:59
 
 from utils import *
 
@@ -30,7 +30,7 @@ def test_monte_carlo_early_starts():
                   [0, 1, 0, 1, 0, 0, 1, 0], 
                   [0, 0, 0, 0, 0, 1, 0, 1]])
     # rewards of each state-action
-    R = np.array([2, -10, 0, -10, 0, 10, 0, 0])
+    R = np.array([0, -10, 0, -10, 0, 10, 0, 0])
     # prior probability of starting episode in each state-action
     p = np.random.rand(8,)
     p = p/np.sum(p)

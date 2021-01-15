@@ -2,7 +2,7 @@
 # @Author: OctaveOliviers
 # @Date:   2020-10-25 16:22:44
 # @Last Modified by:   OctaveOliviers
-# @Last Modified time: 2021-01-14 13:34:11
+# @Last Modified time: 2021-01-15 19:17:43
 
 
 from parameters import *
@@ -135,7 +135,7 @@ def load_dict(file_name=None):
     # return df.to_dict()
 
 
-def monte_carlo_early_start(structure=None, transitions=None, rewards=None, prior=None, discount=None, num_epi = 50, len_epi = 20):
+def monte_carlo_early_start(structure=None, transitions=None, rewards=None, prior=None, discount=None, num_epi = 10000, len_epi = 20):
     """
     explain
 
@@ -156,38 +156,44 @@ def monte_carlo_early_start(structure=None, transitions=None, rewards=None, prio
     num_sa,num_s = structure.shape
 
     # initialize vector of q-values
-    q = np.random.rand(num_sa,)
+    q = 100*np.random.rand(num_sa,)
+    # q = np.array([8.2, -5, 9.5, -6, 8, 10, 0, 0])
     # compute policy matrix from q-values
     policy = compute_policy(S=structure, q=q)
     # number of times that each state-action is visited
     n = np.zeros(num_sa,)
+    # n = np.array([1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0])
 
     V_old, val_old = compute_potential(policy, transitions, rewards, prior, q, discount, len_epi)
     pol_old = policy
     pol_new = policy
-    print(f"policy changed to {pol_old}")
-    print(f"value of policy {np.sum(val_old)}")
+    print(f"starting policy is {pol_old}")
+    # print(f"value of policy {np.sum(val_old)}")
+
+    g_all = [[] for i in range(num_sa)]
 
     # loop until convergence
-    for k in range(num_epi):
+    for k in trange(num_epi):
 
         # test if this value increases
         #inv_mat = np.linalg.inv( np.eye(num_sa) - discount * np.transpose(np.matmul(policy, transitions)) )
         #print(f" does this value increase ? {np.sum(np.matmul( inv_mat, rewards ))} ")
         
-        V_new, val_new = compute_potential(policy, transitions, rewards, prior, q, discount, len_epi)
+        # V_new, val_new = compute_potential(policy, transitions, rewards, prior, q, discount, len_epi)
 
-        if not np.array_equal(pol_old, pol_new): 
-            print(f"policy changed to {policy}")
-            print(f"value of policy {np.sum(val_new)}")
+        # if not np.array_equal(pol_old, pol_new): 
+        #     print(f"policy changed to {policy}")
+        #     # print(f"value of policy {np.sum(val_new)}")
 
-        pol_old = pol_new
+        # pol_old = pol_new
         
-        print(f"potential is V = {V_new}")
+        # # print(f"potential is V = {V_new}")
+        # # print(f"sum of values is = {np.sum( np.matmul(policy.T, q) )}")
+        # print(f"values are = {np.matmul(policy.T, q)}")
         
         # print(f"number of visits {n}")
-        #print(f"potential increases? {V_old <= V_new}")
-        #V_old = V_new
+        # # print(f"potential increases? {V_old <= V_new}")
+        # # V_old = V_new
         
 
         # store the state-actions and rewards encountered in the episode
@@ -216,16 +222,19 @@ def monte_carlo_early_start(structure=None, transitions=None, rewards=None, prio
         n += n_epi
 
         # update q-estimates
-        update_q_values(q=q, z=z, r=r, n=n, n_epi=n_epi, gam=discount)
+        update_q_values(q=q, z=z, r=r, n=n, n_epi=n_epi, gam=discount, g_all = g_all)
         # compute policy matrix from q-values
         policy = compute_policy(S=structure, q=q)
 
         pol_new = policy
-    
+     
+    # for i in range(num_sa):
+    #     print(g_all[i])
+
     return q
 
 
-def update_q_values(q=None, z=None, r=None, n=None, n_epi=None, gam=None):
+def update_q_values(q=None, z=None, r=None, n=None, n_epi=None, gam=None, g_all=None):
     """
     explain
     """
@@ -241,6 +250,8 @@ def update_q_values(q=None, z=None, r=None, n=None, n_epi=None, gam=None):
     for t in range(len_epi):
         # update goal value
         g = gam*g + r[t]
+
+        g_all[z[t]].append(g)
 
         # update q-estimate with incremetnal mean formula
         n_epi[z[t]] -= 1

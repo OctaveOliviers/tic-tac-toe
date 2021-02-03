@@ -2,7 +2,7 @@
 # @Author: OctaveOliviers
 # @Date:   2020-09-17 13:05:22
 # @Last Modified by:   OctaveOliviers
-# @Last Modified time: 2021-01-07 21:33:39
+# @Last Modified time: 2021-01-16 18:07:28
 
 
 import copy
@@ -259,7 +259,10 @@ class Agent:
 
 
 class Agent_Dict(Agent):
-    """docstring for Agent_Dict"""
+    """
+    Agent that stores q-values in dictionary
+
+    """
 
     def __init__(self, **kwarg):
         """

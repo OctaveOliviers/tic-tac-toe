@@ -1,35 +1,19 @@
 # @Created by: OctaveOliviers
 # @Created on: 2021-01-16 01:02:03
 # @Last Modified by: OctaveOliviers
-# @Last Modified on: 2021-02-02 14:14:56
+# @Last Modified on: 2021-03-03 20:28:24
 
 
 # import libraries
 using LinearAlgebra
 
 
-function compute_policy(S, q)
-    """
-    explain
-    """
-    
-    # extract useful info
-    num_sa,num_s = size(S)
-
-    # policy matrix
-    P = zeros(Int64, num_sa, num_s)
-    # for each state choose action with highest q-value
-    for s = 1:num_s
-        # find actions of that state
-        sa = findall(!iszero, S[:,s])
-        # index of maximal q value in state s
-        idx_max_q = argmax(q[sa])
-        # choose the action with maximal q-value
-        P[sa[idx_max_q], s] = 1
-    end
-
-    return P
-end
+# macro Name(arg)
+#     """
+#     read name of a variable
+#     """
+#     string(arg)
+# end
 
 
 function compute_potential(P, T, r, p, q, gam, len_epi; return_q_opt=false)
@@ -108,8 +92,16 @@ function step(P, T, r, p, q, gam, len_epi; return_diag=false)
 end
 
 
-function compute_weights()
+function contraction(q_opt, q_old, q_new)
     """
     explain
     """
+
+    # neglect q-values that were not updated
+    new_els = findall(!iszero, q_new-q_old)
+    q = q_opt[new_els]
+    q_o = q_old[new_els]
+    q_n = q_new[new_els]
+
+    return map(abs, q.-q_n) ./ map(abs, q.-q_o)
 end

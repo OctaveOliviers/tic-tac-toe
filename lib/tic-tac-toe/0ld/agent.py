@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-# @Author: OctaveOliviers
-# @Date:   2020-09-17 13:05:22
-# @Last Modified by:   OctaveOliviers
-# @Last Modified time: 2021-01-16 18:07:28
+# @Created by: OctaveOliviers
+# @Created on: 2020-09-17 13:05:22
+# @Last Modified by: OctaveOliviers
+# @Last Modified on: 2021-02-07 13:33:37
 
 
 import copy
@@ -31,25 +31,66 @@ class Agent:
         explanation   
         """
         # sign of the agent on the board
-        self.sign           = kwargs.get('sign', 'x')
+        self._sign           = kwargs.get('sign', 'x')
 
-        # order for weighting the probability of each action
-        self.set_order(kwargs.get('order', 1))
-        self.ord_max         = kwargs.get('ord_max', 10)
-        self.ord_exp         = kwargs.get('ord_exp', 2)
-        self.ord_incr_steps  = kwargs.get('ord_incr_steps', 1000)
+        # order or norm for weighting the probability of each action
+        self._ord            = kwargs.get('order', 1)
+        self._ord_max         = kwargs.get('ord_max', 10)
+        self._ord_exp         = kwargs.get('ord_exp', 2)
+        self._ord_incr_steps  = kwargs.get('ord_incr_steps', 1000)
 
         # number of training games
         self.num_train      = kwargs.get('num_train', 1000)
 
         # learning rate
-        self.set_lr(kwargs.get('lr', 0.5))
-        self.lr_min         = kwargs.get('lr_min', 0.01)
-        self.lr_exp         = kwargs.get('lr_exp', 0.9)
-        self.lr_red_steps   = kwargs.get('lr_red_steps', 1000)
+        self._lr            = kwargs.get('lr', 0.5)
+        self._lr_min         = kwargs.get('lr_min', 0.01)
+        self._lr_exp         = kwargs.get('lr_exp', 0.9)
+        self._lr_red_steps   = kwargs.get('lr_red_steps', 1000)
 
         # name of agent used for saving parameters
-        self.name           = datetime.now().strftime("%y%m%d-%H%M")
+        self._name           = 
+
+    def __str__(self):
+        """
+        explain
+        """
+        return f"ttt-agent-{datetime.now().strftime("%y%m%d-%H%M")}"
+
+    @property
+    def sign(self):
+        return self._sign
+
+
+    @property
+    def ord(self):
+        """
+        Getter for read-only attribute '_ord'
+        """
+        return self._ord
+        
+
+    @ord.setter
+    def ord(self, value):
+        """
+        Setter for attribute '_ord'
+        """
+        self._ord = value
+
+    @property
+    def lr(self):
+        """
+        Getter for read-only attribute '_lr'
+        """
+        return self._lr
+ 
+
+    @lr.setter
+    def lr(self, value):
+        """
+        Setter for attribute '_lr'
+        """
+        self._lr = value
 
 
     def choose_action(self, board):

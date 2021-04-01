@@ -1,15 +1,14 @@
 # @Created by: OctaveOliviers
 # @Created on: 2021-01-15 18:50:08
 # @Last Modified by: OctaveOliviers
-# @Last Modified on: 2021-03-04 18:29:14
+# @Last Modified on: 2021-04-01 14:53:59
 
 
 # import libraries
 using Random
 using LinearAlgebra
 
-# include files
-include("utils.jl")
+include("params.jl")
 
 
 struct MDP
@@ -41,31 +40,25 @@ struct MDP
 end # struct MDP
 
 
-function generate_mdp(num_sa, num_s; discount=0.9, seed=42)
+function generate_mdp(num_sa, num_s; discount=DISCOUNT, seed=nothing)
     """
     explain
     """
     # set random number generator
-    Random.seed!(seed)
+    if seed !== nothing; Random.seed!(seed); end
 
     # number of terminal states
     num_term = rand(1:ceil(num_s/3))
-
     # create structure
     structure = create_structure(num_s, num_sa, num_term)
-
     # create transition probabilities
     transitions = create_transitions(num_s, num_sa)
-
     # store terminal states of MDP
     term_states = [i for i=(num_s-num_term+1):num_s]
-
     # set q-values
     q = initialize_q(num_s, num_sa, num_term)
-    
     # optimal policy
     policy = compute_policy(structure, q)
-
     # compute rewards
     rewards = (I - discount*transitions'*policy') * q
 
@@ -119,7 +112,7 @@ function initialize_q(num_s, num_sa, num_term)
     explain
     """
     # q-values
-    q = rand(Float64, num_sa)
+    q = 5*rand(Float64, num_sa)
     # q-values in terminal states are zero
     q[Int(num_s-num_term+1):num_s] .= 0
 
@@ -150,7 +143,7 @@ function compute_policy(structure, q)
 end
 
 
-function policy_q(policy, transitions, rewards, discount)
+function compute_q_policy(policy, transitions, rewards, discount)
     """
     explain
     """
@@ -158,10 +151,13 @@ function policy_q(policy, transitions, rewards, discount)
 end
 
 
-function generate_episode(mces, mdp; max_len_epi = 5*1e2)
+function generate_episode(mces, mdp; max_len_epi=5*1e2, seed=nothing)
     """
     explain
     """
+    # set random number generator
+    if seed !== nothing; Random.seed!(seed); end
+
     # store the state-actions and rewards encountered in the episode
     sa = Array{Int64}(undef, 0)
     r = Array{Float64}(undef, 0)
@@ -169,7 +165,7 @@ function generate_episode(mces, mdp; max_len_epi = 5*1e2)
     n_vis = zeros(Int64, mdp.num_sa)
 
     # choose initial state-action pair according to weights in prior
-    append!(sa, sample([i for i = 1:mdp.num_sa], Weights(mces.prior)))
+    append!(sa, sample(1:mdp.num_sa, Weights(mces.prior)))
     # store reward of initial state-action
     append!(r, mdp.rewards[sa[end]])
     # update number of visits of initial state-action
@@ -178,7 +174,7 @@ function generate_episode(mces, mdp; max_len_epi = 5*1e2)
     # generate an episode from initial state
     while !(sa[end] in mdp.terminal_state_action) && (length(sa) <= max_len_epi)
         # go to new state-action
-        append!(sa, sample([i for i = 1:mdp.num_sa], Weights((mces.policy*mdp.transitions)[:,sa[end]])))
+        append!(sa, sample(1:mdp.num_sa, Weights((mces.policy*mdp.transitions)[:,sa[end]])))
         # store reward of new state-action
         append!(r, mdp.rewards[sa[end]])
         # update number of visits of new state-action

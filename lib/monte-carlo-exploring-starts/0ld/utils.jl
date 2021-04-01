@@ -1,7 +1,7 @@
 # @Created by: OctaveOliviers
 # @Created on: 2021-01-16 01:02:03
 # @Last Modified by: OctaveOliviers
-# @Last Modified on: 2021-03-03 20:28:24
+# @Last Modified on: 2021-03-15 16:23:58
 
 
 # import libraries
@@ -15,6 +15,10 @@ using LinearAlgebra
 #     string(arg)
 # end
 
+
+function normalize(args)
+    #function body
+end
 
 function compute_potential(P, T, r, p, q, gam, len_epi; return_q_opt=false)
     """

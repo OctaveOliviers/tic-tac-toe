@@ -7,7 +7,6 @@ using Dates
 
 include("mces.jl")
 include("mdp.jl")
-include("utils.jl")
 
 Random.seed!(Dates.day(today()))
 
@@ -31,7 +30,7 @@ P1 = compute_policy(mdp.structure, q1)
 q1_opt = policy_q(P1, mdp.transitions, mdp.rewards, mdp.discount)
 # w1 = rand(Float64, num_sa)
 # w1 = w1/sum(w1)
-# 
+#
 q2 = rand(Float64, mdp.num_sa)
 P2 = compute_policy(mdp.structure, q2)
 q2_opt = policy_q(P2, mdp.transitions, mdp.rewards, mdp.discount)
@@ -46,7 +45,7 @@ old_diff = maximum(abs.(q1-q2))
 println("Different policies? ", P1 != P2)
 
 # apply mces operator
-# q1_new = (1 .- w).*q1 + w.*q1_opt 
+# q1_new = (1 .- w).*q1 + w.*q1_opt
 # q2_new = (1 .- w).*q2 + w.*q2_opt
 
 # ụdpate q1 until each state action has been updated at least once

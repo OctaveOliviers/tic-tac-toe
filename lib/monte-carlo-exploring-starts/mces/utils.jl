@@ -1,87 +1,54 @@
-# @Created by: OctaveOliviers
-# @Created on: 2021-01-15 17:36:10
-# @Last Modified by: OctaveOliviers
-# @Last Modified on: 2021-04-01 14:53:56
-
-
 # import libraries
 using Random
 using StatsBase
 using ProgressBars
 
-include("params.jl")
-
-
-mutable struct MCES
-    """
-    struct for Monte Carlo Exploring Starts solver
-    """
-    
-    q       ::Vector{Float64}
-    policy  ::Matrix{Int8}
-    prior   ::Vector{Float64}
-    
-    function MCES(
-        mdp; 
-        seed=nothing)
-        """
-        constructor
-        """
-        # set random number generator
-        if seed !== nothing; Random.seed!(seed); end
-
-        # initialise q-values
-        q = rand(mdp.num_sa)
-        # q = [5, 5.1, 0, 0]
-        # initialise policy
-        policy = compute_policy(mdp.structure, q)
-        # initialise prior
-        prior = normalize(rand(mdp.num_sa))
-
-        new(q, policy, prior)
-    end
-end # struct MCES
+include("mces.jl")
+include("../mdp/mdp.jl")
+include("../params.jl")
 
 
 function run_mces!(
-    mces, 
-    mdp; 
-    num_epi=1e3, 
-    max_len_epi=2*1e2, 
-    seed=nothing, 
-    tol=TOLERANCE, 
-    c=Array{Float64}(undef, 0))
+    mces::MCES,
+    mdp::MDP;
+    max_num_epi::Real=EPISODE_MAX_NUMBER,
+    max_len_epi::Real=EPISODE_MAX_LENGTH,
+    tol::Real=TOLERANCE,
+    seed::Integer=NO_SEED
+    )::Nothing
+    # c=Array{Float64}(undef, 0))
     """
     explain
     """
     # set random number generator
-    if seed !== nothing; Random.seed!(seed); end
+    if seed != NO_SEED; Random.seed!(seed); end
 
     # number of times that each state-action is visited
-    tot_vis = zeros(Int64, mdp.num_sa)
+    tot_vis = zeros(Integer, mdp.num_sa)
 
     # loop until convergence
-    for k = ProgressBar(1:num_epi)
+    for k = ProgressBar(1:max_num_epi)
         # run one simulation down the MDP and update the parameters
         mces_step!(mces, mdp, tot_vis, max_len_epi=max_len_epi, seed=rand(UInt64))
 
         # check for convergence
-        if all(abs.(mdp.q-mces.q) .< tol)
-            break
-        end
+        if all(abs.(mdp.q-mces.q) .< tol); break; end
 
         # compute contraction
-        append!(c, maximum(abs.(mdp.q-mces.q)))
+        # append!(c, maximum(abs.(mdp.q-mces.q)))
     end
+
+    return nothing
 end
 
 
 function mces_step_all_sa_update!(
-    mces, 
-    mdp; 
-    max_num_update=1e3, 
-    max_len_epi=2*1e2, 
-    seed=nothing)
+    mces::MCES,
+    mdp::MDP;
+    max_num_update::Real=EPISODE_MAX_NUMBER,
+    max_len_epi::Real=EPISODE_MAX_LENGTH,
+    seed::Integer=NO_SEED
+    )::Nothing
     """
     explain
     """
@@ -89,53 +56,55 @@ function mces_step_all_sa_update!(
     @assert all(mces.prior .> 0)
 
     # set random number generator
-    if seed !== nothing; Random.seed!(seed); end
+    if seed != NO_SEED; Random.seed!(seed); end
 
     # number of times that each state-action is visited
-    tot_vis = zeros(Int64, mdp.num_sa)
+    tot_vis = zeros(Integer, mdp.num_sa)
 
     # apply MCES update until every state-action has been visited once
-    i = 1
     while any(tot_vis .< 1)
         # run one simulation down the MDP and update the parameters
         mces_step!(mces, mdp, tot_vis, max_len_epi=max_len_epi, seed=rand(UInt64))
 
-        println("finished update ", i)
-
-        if i >= max_num_update
-            println("Terminate because reached maximal number of allowed updates.")
+        if sum(tot_vis) >= max_num_update*max_len_epi;
+            println("reached max number of updates.")
+            break
         end
+    end
 
-        i += 1
-    end    
+    return nothing
 end
 
 
 function mces_step!(
-    mces, 
-    mdp, 
-    tot_vis; 
-    max_len_epi=2*1e2, 
-    seed=nothing)
+    mces::MCES,
+    mdp::MDP,
+    total_visits::Vector;
+    max_len_epi::Real=EPISODE_MAX_LENGTH,
+    seed::Integer=NO_SEED
+    )::Nothing
     """
     explain
     """
     # generate episode
     epi_sa, epi_r, epi_vis = generate_episode(mces, mdp, max_len_epi=max_len_epi, seed=seed)
     # update q-estimates
-    update_q_values!(mces.q, epi_sa, epi_r, tot_vis, epi_vis, mdp.discount)
+    update_q_values!(mces.q, epi_sa, epi_r, total_visits, epi_vis, mdp.discount)
     # update policy matrix from q-values
     update_policy!(mces.policy, mdp.structure, mces.q)
+
+    return nothing
 end
 
 
 function update_q_values!(
-    q, 
-    episode_sa, 
-    episode_r, 
-    total_visits,
-    episode_visits, 
-    discount)
+    q::Vector,
+    episode_sa::Vector,
+    episode_r::Vector,
+    total_visits::Vector,
+    episode_visits::Vector,
+    discount::Real
+    )::Nothing
     """
     explain
     """
@@ -151,23 +120,24 @@ function update_q_values!(
     for t in 1:length(episode_sa)
         # update goal value
         g = discount*g + episode_r[t]
-
         # update q-estimate with incremental mean formula
         episode_visits[episode_sa[t]] -= 1
         step_size = 1. / (total_visits[episode_sa[t]] - episode_visits[episode_sa[t]])
-        
         q[episode_sa[t]] += step_size*(g - q[episode_sa[t]])
     end
+
+    return nothing
 end
 
 
 function update_q_values(
-    q, 
-    episode_sa, 
-    episode_r, 
-    total_visits, 
-    episode_visits, 
-    discount)
+    q::Vector,
+    episode_sa::Vector,
+    episode_r::Vector,
+    total_visits::Vector,
+    episode_visits::Vector,
+    discount::Real
+    )::Vector
     """
     explain
     """
@@ -175,20 +145,30 @@ function update_q_values(
     q_new = deepcopy(q)
     # update q-values in place
     update_q_values!(q_new, episode_sa, episode_r, total_visits, episode_visits, discount)
-    
+
     return q_new
 end
 
 
-function update_policy!(policy, structure, q)
+function update_policy!(
+    policy::Matrix,
+    structure::Matrix,
+    q::Vector
+    )::Nothing
     """
     explain
     """
     policy .= compute_policy(structure, q)
+
+    return nothing
 end
 
 
-function update_policy(policy, structure, q)
+function update_policy(
+    policy::Matrix,
+    structure::Matrix,
+    q::Vector
+    )::Matrix
     """
     explain
     """
@@ -201,27 +181,38 @@ function update_policy(policy, structure, q)
 end
 
 
-function run_mces_exp!(mces, mdp; num_epi=1e3, max_len_epi=1e3, tol=TOLERANCE)
+function run_mces_exp!(
+    mces::MCES,
+    mdp::MDP;
+    max_num_epi::Real=EPISODE_MAX_NUMBER,
+    max_len_epi::Real=EPISODE_MAX_LENGTH,
+    tol::Real=TOLERANCE
+    )::Nothing
     """
     explain
     """
     # number of times that each state-action is visited
-    tot_vis = zeros(Int64, mdp.num_sa)
+    tot_vis = zeros(Integer, mdp.num_sa)
 
     # loop until convergence
-    for k = ProgressBar(1:num_epi)
+    for k = ProgressBar(1:max_num_epi)
         # perform one mces expected step
         mces_exp_step!(mces, mdp, tot_vis, max_len_epi=max_len_epi)
 
         # check for convergence
-        if all(abs.(mdp.q-mces.q) .< tol)
-            break
-        end
+        if all(abs.(mdp.q-mces.q) .< tol); break; end
     end
+
+    return nothing
 end
 
 
-function mces_exp_step!(mces, mdp, tot_vis; max_len_epi=1e3)
+function mces_exp_step!(
+    mces::MCES,
+    mdp::MDP,
+    total_visits::Vector;
+    max_len_epi::Real=EPISODE_MAX_LENGTH
+    )::Nothing
     """
     explain
     """
@@ -229,10 +220,12 @@ function mces_exp_step!(mces, mdp, tot_vis; max_len_epi=1e3)
     epi_stp = compute_q_policy(mces.policy, mdp.transitions, mdp.rewards, mdp.discount) - mces.q
     epi_vis = sum([(mces.policy*mdp.transitions)^i*mces.prior for i = 0:max_len_epi])
 
-    tot_vis += epi_vis
+    total_visits += epi_vis
 
     # update q-estimates
-    mces.q += epi_stp.*epi_vis./tot_vis
+    mces.q += epi_stp.*epi_vis./total_visits
     # compute policy matrix from q-values
     mces.policy = compute_policy(mdp.structure, mces.q)
+
+    return nothing
 end

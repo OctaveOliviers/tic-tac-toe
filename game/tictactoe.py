@@ -1,24 +1,31 @@
 # -*- coding: utf-8 -*-
 # @Created by: OctaveOliviers
-# @Created on: 2021-02-07 15:23:43
-# @Last Modified by: OctaveOliviers
-# @Last Modified on: 2021-02-07 17:06:20
+# @        on: 2021-04-01T15:07:04+02:00
+# @Last modified by: OctaveOliviers
+# @              on: 2021-04-06T13:00:30+02:00
+
 
 import numpy as np
 import dm_env
 from dm_env import specs
 
-from board import Board 
+from board import Board
 
 class TicTacToe(dm_env.Environment):
     """docstring for TicTacToe"""
 
-    def __init__(self, nrow = 3, ncol= 3, self_play = True, **kwargs):
+    def __init__(
+        self,
+        nrow: int = 3,
+        ncol: int = 3,
+        self_play: bool = True,
+        **kwargs
+    ):
         """
         explain
         """
         super(TicTacToe, self).__init__()
-        
+
         self._board = Board(nrow=nrow, ncol=ncol, **kwargs)
 
         self._self_play = self_play
@@ -51,7 +58,7 @@ class TicTacToe(dm_env.Environment):
         if not self._board.is_done():
             return dm_env.transition(reward=0., observation=self._observation())
         else:
-            reward = 
+            reward =
             return dm_env.termination(reward=reward, observation=self._observation())
 
 

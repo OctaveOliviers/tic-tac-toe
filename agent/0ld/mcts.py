@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Created by: OctaveOliviers
-# @Created on: 2021-02-07 11:34:37
-# @Last Modified by: OctaveOliviers
-# @Last Modified on: 2021-02-07 13:36:37
+# @        on: 2021-04-01T15:07:04+02:00
+# @Last modified by: OctaveOliviers
+# @              on: 2021-04-06T12:19:39+02:00
 
 
 # import libraries
@@ -51,22 +51,22 @@ def mcts_simulation(game, fun_prior, N, Q, p_expl):
 
         # take action that maximizes the UCB value
         game.update(game.free_actions()[ucb_vals.index(max(ucb_vals))])
-        
+
         # update visit count
         N[game.state] = N.get(game.state, 0) + 1
         # add board state to list of visited states
         game_states.append(game.state)
 
         # check if agent won
-        if game.is_won(): 
+        if game.is_won():
             reward = game.reward_win
             break
         # if nobody won yet, inverse the board
         game.inverse()
 
     # backup
-    mcts_backup(reward, game_states, N, Q, game.inv_reward)       
-    
+    mcts_backup(reward, game_states, N, Q, game.inv_reward)
+
 
 def mcts_evaluate(game, N, Q, fun_prior, p_expl):
     """
